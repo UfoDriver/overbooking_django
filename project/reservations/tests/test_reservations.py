@@ -2,6 +2,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from . import BaseTestCase
+from .. import models
+
 
 
 class TestReservations(BaseTestCase):
@@ -43,3 +45,23 @@ class TestReservations(BaseTestCase):
     def test_create_reservation(self):
         resp = self.client.post(self.URL, self.get_payload())
         self.assertEqual(resp.status_code, 201)
+        self.assertDictEqual(resp.json(), self.get_payload())
+
+    def test_cannot_book_more(self):
+        config = models.HotelConfig.get_config()
+        config.rooms = 10
+        config.overbooking = 10
+        config.save()
+
+        for _ in range(10):
+            models.Reservation.objects.create(name='name', email='email', arrival_date='2020-02-01',
+                                              departure_date='2020-02-03')
+
+            models.Reservation.objects.create(name='name', email='email', arrival_date='2020-02-01',
+                                              departure_date='2020-02-02')
+            models.Reservation.objects.create(name='name', email='email', arrival_date='2020-02-03',
+                                              departure_date='2020-02-04')
+
+        resp = self.client.post(self.URL, self.get_payload())
+        self.assertEqual(resp.status_code, 400)
+        self.assertDictEqual(resp.json(), {'error': 'No rooms available.'})

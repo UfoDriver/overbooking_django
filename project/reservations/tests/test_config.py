@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from . import BaseTestCase
+from .. import models
 
 
 class TestConfig(BaseTestCase):
@@ -33,4 +34,19 @@ class TestConfig(BaseTestCase):
         self.assertEqual(resp.status_code, 400)
         error = {'overbooking': ['Overbooking cannot be negative.'],
                  'rooms': ['Room number cannot be less than one.']}
+        self.assertDictEqual(resp.json(), error)
+
+    def test_overbooking_decrease_forbidden(self):
+        config = models.HotelConfig.get_config()
+        config.rooms = 10
+        config.overbooking = 10
+        config.save()
+
+        for _ in range(11):
+            models.Reservation.objects.create(name='name', email='email', arrival_date='2020-02-02',
+                                              departure_date='2020-02-02')
+
+        resp = self.do_json_put(self.URL, self.get_payload(rooms=10, overbooking=0))
+        self.assertEqual(resp.status_code, 400)
+        error = {'non_field_errors': ['Cannot decrease room number or overbooking number.']}
         self.assertDictEqual(resp.json(), error)

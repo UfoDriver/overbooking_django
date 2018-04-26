@@ -1,10 +1,9 @@
 import datetime
 
-from django.db.models import Max
 from rest_framework import serializers
 
-import utils
 from . import models
+
 
 class ConfigSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,12 +22,8 @@ class ConfigSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         new_max_number = data['rooms'] + data['rooms'] * data['overbooking'] // 100
-        max_date = models.Reservation.objects.aggregate(max_=Max('departure_date'))['max_']
-        for date in utils.date_range(None, max_date):
-            # @TODO: max reserved rooms for date range should be moved to object manager
-            if models.Reservation.objects.for_date(date).count() > new_max_number:
-                raise serializers.ValidationError(
-                    'Cannot decrease room number or overbooking number.')
+        if models.Reservation.objects.max_occupied() > new_max_number:
+            raise serializers.ValidationError('Cannot decrease room number or overbooking number.')
         return data
 
 

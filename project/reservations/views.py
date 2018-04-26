@@ -5,7 +5,6 @@ from django.views.generic import CreateView, DetailView, UpdateView
 
 from rest_framework import generics, serializers
 
-import utils
 from .models import HotelConfig, Reservation
 from .serializers import ConfigSerializer, ReservationSerializer
 
@@ -23,10 +22,9 @@ class ReservationView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         config = HotelConfig.get_config()
-        # @TODO: Get idea how to do it with SQL
-        for date in utils.date_range(serializer.validated_data['arrival_date'],
-                                     serializer.validated_data['departure_date']):
-            if Reservation.objects.for_date(date).count() >= config.max_rooms:
-                raise serializers.ValidationError({'error': 'No rooms available.'})
-            date += datetime.timedelta(days=1)
+        max_occupied = Reservation.objects.max_occupied(
+            serializer.validated_data['arrival_date'],
+            serializer.validated_data['departure_date'])
+        if max_occupied >= config.max_rooms:
+            raise serializers.ValidationError({'error': 'No rooms available.'})
         serializer.save()

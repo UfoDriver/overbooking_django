@@ -1,5 +1,7 @@
 from django.db import models
 
+import utils
+
 
 class HotelConfig(models.Model):
     rooms = models.SmallIntegerField()
@@ -22,6 +24,14 @@ class ReservationManager(models.Manager):
     def for_date(self, date):
         return self.get_queryset().filter(arrival_date__lte=date,
                                           departure_date__gte=date)
+
+    def max_occupied(self, from_date=None, to_date=None):
+        if to_date is None:
+            to_date = self.aggregate(max_=models.Max('departure_date'))['max_']
+
+        # @TODO: Get idea how to do it with SQL
+        return max(self.for_date(date).count()
+                   for date in utils.date_range(from_date, to_date))
 
 
 class Reservation(models.Model):

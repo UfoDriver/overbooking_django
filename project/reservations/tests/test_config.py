@@ -1,11 +1,11 @@
 from django.test import TestCase
+from django.urls import reverse
 
 from . import BaseTestCase
 
 
 class TestConfig(BaseTestCase):
-    # @TODO: use django resolve for urls
-    URL = '/api/v1/config'
+    URL = reverse('reservations:config')
     PAYLOAD = {
         'rooms': 100,
         'overbooking': 10

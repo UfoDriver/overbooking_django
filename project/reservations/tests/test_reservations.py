@@ -1,10 +1,11 @@
 from django.test import TestCase
+from django.urls import reverse
 
 from . import BaseTestCase
 
 
 class TestReservations(BaseTestCase):
-    URL = '/api/v1/reservations'
+    URL = reverse('reservations:reservations')
     PAYLOAD = {
         'name': 'John Smith',
         'email': 'john@smiths.com',
